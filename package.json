@@ -1,0 +1,14 @@
+{
+  "name": "vibe-wise-opencode",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "VibeWise for opencode: you build, AI writes. Learn how to build software while the agent writes the code.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
