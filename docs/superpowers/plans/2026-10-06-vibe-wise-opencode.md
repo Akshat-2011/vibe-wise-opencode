@@ -62,6 +62,7 @@
 ```
 .vibe-wise/
 .sensible-vibes/
+.superpowers/
 .DS_Store
 .opencode/node_modules/
 .opencode/package.json
