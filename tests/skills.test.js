@@ -44,3 +44,19 @@ test("learn skill references its companion guides", () => {
     assert.ok(text.includes(companion), `SKILL.md does not reference ${companion}`)
   }
 })
+
+test("reset skill drives the reset tool and question confirmation", () => {
+  const file = path.join(SKILLS, "vibe-wise-reset", "SKILL.md")
+  const text = fs.readFileSync(file, "utf8")
+  const fields = parseFrontmatter(text, file)
+  assert.equal(fields.name, "vibe-wise-reset")
+  assert.ok(fields.description && fields.description.length <= 1024)
+  for (const key of Object.keys(fields)) assert.ok(RECOGNIZED.has(key))
+  assert.equal("disable-model-invocation" in fields, false)
+  assert.doesNotMatch(text, /\bClaude\b/)
+  assert.doesNotMatch(text, /\$\{CLAUDE_PLUGIN_ROOT\}/)
+  assert.ok(text.includes("vibe_wise_reset"))
+  assert.ok(text.includes("question"))
+  assert.ok(text.includes("confirmation"))
+  assert.doesNotMatch(text, /python/i)
+})
