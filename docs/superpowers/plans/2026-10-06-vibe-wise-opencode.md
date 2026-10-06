@@ -1186,7 +1186,7 @@ function parseFrontmatter(text, file) {
 }
 
 test("skill frontmatter is valid for opencode", () => {
-  for (const name of ["vibe-wise-learn", "vibe-wise-reset"]) {
+  for (const name of ["vibe-wise-learn"]) {
     const file = path.join(SKILLS, name, "SKILL.md")
     const text = fs.readFileSync(file, "utf8")
     const fields = parseFrontmatter(text, file)
@@ -1263,10 +1263,18 @@ git commit -m "feat: port the learn skill and its guides"
 
 - [ ] **Step 1: Add reset-skill assertions**
 
-Append to `tests/skills.test.js`:
+Append to `tests/skills.test.js` (the reset skill's frontmatter is validated here because the skill is created in this task; the earlier test's loop covers only `vibe-wise-learn`):
 ```js
 test("reset skill drives the reset tool and question confirmation", () => {
-  const text = fs.readFileSync(path.join(SKILLS, "vibe-wise-reset", "SKILL.md"), "utf8")
+  const file = path.join(SKILLS, "vibe-wise-reset", "SKILL.md")
+  const text = fs.readFileSync(file, "utf8")
+  const fields = parseFrontmatter(text, file)
+  assert.equal(fields.name, "vibe-wise-reset")
+  assert.ok(fields.description && fields.description.length <= 1024)
+  for (const key of Object.keys(fields)) assert.ok(RECOGNIZED.has(key))
+  assert.equal("disable-model-invocation" in fields, false)
+  assert.doesNotMatch(text, /\bClaude\b/)
+  assert.doesNotMatch(text, /\$\{CLAUDE_PLUGIN_ROOT\}/)
   assert.ok(text.includes("vibe_wise_reset"))
   assert.ok(text.includes("question"))
   assert.ok(text.includes("confirmation"))
