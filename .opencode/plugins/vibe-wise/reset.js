@@ -99,5 +99,36 @@ export function reset(cwd, confirmation = null, deps = defaultDeps()) {
   }
   if (confirmation === null) return preview
 
-  throw new Error("Target or notes changed. Preview and confirm again; nothing reset.")
+  let backupParentStats = null
+  try {
+    backupParentStats = deps.fs.lstat(backupParent)
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error
+  }
+  if (backupParentStats && (!backupParentStats.isDirectory() || backupParentStats.isSymbolicLink())) {
+    throw new Error("Backup path must be a real directory; nothing reset.")
+  }
+  deps.fs.mkdir(backupParent)
+
+  const backup = deps.fs.mkdtemp(path.join(backupParent, `reset-${formatTimestamp(deps.now())}-`))
+  try {
+    for (const name of NOTE_NAMES) {
+      if (notes[name] !== undefined) deps.fs.writeFile(path.join(backup, name), notes[name])
+    }
+    for (const [name, text] of Object.entries(FRESH)) {
+      deps.fs.writeText(path.join(backup, `.new-${name}`), text)
+    }
+    if (snapshot(directory, deps).fingerprint !== fingerprint) {
+      throw new Error("Notes changed during backup; active notes were not reset.")
+    }
+    for (const name of NOTE_NAMES) {
+      deps.fs.rename(path.join(backup, `.new-${name}`), path.join(state, name))
+    }
+  } catch (error) {
+    throw new Error(
+      `Reset did not complete. Backup location: ${backup}. ` +
+        `Check active notes before continuing. ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+  return { status: "reset", project: path.dirname(state), state, backup }
 }

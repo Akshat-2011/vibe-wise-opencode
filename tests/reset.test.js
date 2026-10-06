@@ -92,3 +92,61 @@ test("worktree and nested repository boundaries report no notes", () => {
   }
   assertOriginals(parent.state, parent.originals)
 })
+
+test("reset backs up only notes and restarts onboarding", () => {
+  const { root, project } = tempProject()
+  const { state, originals } = writeResetNotes(project)
+  fs.writeFileSync(path.join(project, "app.py"), "important source\n")
+  fs.writeFileSync(path.join(state, "custom.md"), "keep this\n")
+  const sibling = path.join(root, "another-project")
+  fs.mkdirSync(sibling)
+  const other = writeResetNotes(sibling)
+
+  const preview = reset(project)
+  const result = reset(project, preview.confirmation)
+  assert.equal(result.status, "reset")
+  assert.equal(result.state, state)
+  assert.equal(result.project, project)
+  assert.equal(path.dirname(result.backup), path.join(state, "backups"))
+  assertOriginals(result.backup, originals)
+  assert.deepEqual(fs.readdirSync(result.backup).sort(), Object.keys(originals).sort())
+
+  const profile = fs.readFileSync(path.join(state, "profile.md"), "utf8")
+  assert.ok(profile.includes("Learning mode: active"))
+  assert.ok(profile.includes("Onboarding: incomplete"))
+  assert.ok(profile.includes("Onboarding reset: pending"))
+  assert.ok(!profile.includes("Advanced"))
+  assert.ok(!fs.readFileSync(path.join(state, "progress.md"), "utf8").includes("Pending decision"))
+  assert.ok(!fs.readFileSync(path.join(state, "project-map.md"), "utf8").includes("SQLite"))
+  assert.equal(fs.readFileSync(path.join(project, "app.py"), "utf8"), "important source\n")
+  assert.equal(fs.readFileSync(path.join(state, "custom.md"), "utf8"), "keep this\n")
+  assertOriginals(other.state, other.originals)
+  assert.ok(fs.statSync(path.join(project, ".git")).isDirectory())
+})
+
+test("nested directory and legacy notes reset in place", () => {
+  const { project } = tempProject()
+  const { state, originals } = writeResetNotes(project, { legacy: true })
+  const nested = path.join(project, "src")
+  fs.mkdirSync(nested)
+  const preview = reset(nested)
+  const result = reset(nested, preview.confirmation)
+  assert.equal(result.state, state)
+  assert.equal(fs.existsSync(path.join(project, ".vibe-wise")), false)
+  assertOriginals(path.join(state, "backups", path.basename(result.backup)), originals)
+})
+
+test("partial state and repeated resets preserve each backup", () => {
+  const { project } = tempProject()
+  const { state, originals } = writeResetNotes(project)
+  fs.unlinkSync(path.join(state, "progress.md"))
+  fs.unlinkSync(path.join(state, "project-map.md"))
+  const firstPreview = reset(project)
+  const first = reset(project, firstPreview.confirmation).backup
+  assert.deepEqual(fs.readdirSync(first), ["profile.md"])
+  assert.deepEqual(fs.readFileSync(path.join(first, "profile.md")), originals["profile.md"])
+  const secondPreview = reset(project)
+  const second = reset(project, secondPreview.confirmation).backup
+  assert.notEqual(first, second)
+  assert.deepEqual(fs.readFileSync(path.join(first, "profile.md")), originals["profile.md"])
+})
