@@ -43,7 +43,7 @@
   "description": "VibeWise for opencode: you build, AI writes. Learn how to build software while the agent writes the code.",
   "license": "MIT",
   "scripts": {
-    "test": "node --test tests/"
+    "test": "node --test"
   },
   "engines": {
     "node": ">=20"
@@ -332,7 +332,7 @@ export function profileIsActive(profilePath) {
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `node --test tests/state.test.js`
-Expected: PASS (12 subtests), 0 failures.
+Expected: PASS (11 tests), 0 failures.
 
 - [ ] **Step 6: Commit**
 
@@ -1323,7 +1323,7 @@ code, dependencies, Git history, other projects, and plugin installation stay in
 
 - [ ] **Step 3: Run tests to verify they pass**
 
-Run: `node --test tests/`
+Run: `node --test`
 Expected: ALL tests pass, including the new reset-skill test.
 
 - [ ] **Step 4: Commit**
@@ -1537,7 +1537,7 @@ Fetch the original: `curl -fsSL https://raw.githubusercontent.com/nykooi1/vibe-w
 - Requirements: opencode and Node 20+ (tests only); no packages to install.
 - Local checks:
   ```sh
-  node --test tests/
+  node --test
   sh -n install.sh
   node --input-type=module --check -e "$(cat .opencode/plugins/vibe-wise.js)"
   git diff --check
@@ -1574,7 +1574,7 @@ git commit -m "docs: add README, development guide, and demo walkthrough"
 - [ ] **Step 1: Run the full suite and checks**
 
 ```bash
-node --test tests/
+node --test
 sh -n install.sh
 node --input-type=module --check -e "$(cat .opencode/plugins/vibe-wise.js)"
 git diff --check
