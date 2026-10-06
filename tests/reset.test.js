@@ -150,3 +150,67 @@ test("partial state and repeated resets preserve each backup", () => {
   assert.notEqual(first, second)
   assert.deepEqual(fs.readFileSync(path.join(first, "profile.md")), originals["profile.md"])
 })
+
+test("stale confirmation is rejected before writes", () => {
+  const { project } = tempProject()
+  const { state } = writeResetNotes(project)
+  const token = reset(project).confirmation
+  fs.writeFileSync(path.join(state, "progress.md"), "new understanding\n")
+  assert.throws(() => reset(project, token), /changed/)
+  assert.equal(fs.readFileSync(path.join(state, "progress.md"), "utf8"), "new understanding\n")
+  assert.equal(fs.existsSync(path.join(state, "backups")), false)
+})
+
+test("confirmation cannot target a different project", () => {
+  const { root, project } = tempProject()
+  writeResetNotes(project)
+  const other = path.join(root, "another-project")
+  fs.mkdirSync(other)
+  const otherNotes = writeResetNotes(other)
+  const token = reset(project).confirmation
+  assert.throws(() => reset(other, token), /changed/)
+  assertOriginals(otherNotes.state, otherNotes.originals)
+  assert.equal(fs.existsSync(path.join(otherNotes.state, "backups")), false)
+})
+
+test("symlinked backup directory is rejected before notes change", () => {
+  const { root, project } = tempProject()
+  const { state, originals } = writeResetNotes(project)
+  const outside = path.join(root, "outside")
+  fs.mkdirSync(outside)
+  fs.symlinkSync(outside, path.join(state, "backups"), "dir")
+  const token = reset(project).confirmation
+  assert.throws(() => reset(project, token), /Backup path/)
+  assertOriginals(state, originals)
+  assert.deepEqual(fs.readdirSync(outside), [])
+})
+
+test("backup failure does not modify active notes", () => {
+  const { project } = tempProject()
+  const { state, originals } = writeResetNotes(project)
+  const deps = defaultDeps()
+  const realWrite = deps.fs.writeFile
+  deps.fs.writeFile = (target, data) => {
+    if (path.basename(target) === "progress.md") throw new Error("simulated disk failure")
+    return realWrite(target, data)
+  }
+  const token = reset(project).confirmation
+  assert.throws(() => reset(project, token, deps), /did not complete/)
+  assertOriginals(state, originals)
+})
+
+test("replacement failure keeps a complete backup and reports it", () => {
+  const { project } = tempProject()
+  const { state, originals } = writeResetNotes(project)
+  const deps = defaultDeps()
+  const realRename = deps.fs.rename
+  deps.fs.rename = (from, to) => {
+    if (path.basename(to) === "progress.md") throw new Error("simulated write failure")
+    return realRename(from, to)
+  }
+  const token = reset(project).confirmation
+  assert.throws(() => reset(project, token, deps), /Backup location/)
+  const backups = fs.readdirSync(path.join(state, "backups"))
+  assert.equal(backups.length, 1)
+  assertOriginals(path.join(state, "backups", backups[0]), originals)
+})
