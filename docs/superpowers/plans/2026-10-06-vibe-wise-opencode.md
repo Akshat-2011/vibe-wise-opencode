@@ -1138,8 +1138,8 @@ export default async function VibeWisePlugin(input) {
 Run: `node --test tests/plugin.test.js`
 Expected: PASS (6 tests).
 
-Run: `node --input-type=module --check -e "$(cat .opencode/plugins/vibe-wise.js)"`
-Expected: no output, exit 0. If this Node flag combination is unavailable, use `node --check .opencode/plugins/vibe-wise.js` from a clean checkout state (root `package.json` has `"type": "module"`).
+Run: `node --check .opencode/plugins/vibe-wise.js`
+Expected: no output, exit 0, run from a clean checkout state (root `package.json` has `"type": "module"`). Note: Node v22.23.2 does not support `--input-type=module --check -e`; the file form is the supported check.
 
 - [ ] **Step 6: Commit**
 
@@ -1539,7 +1539,7 @@ Fetch the original: `curl -fsSL https://raw.githubusercontent.com/nykooi1/vibe-w
   ```sh
   node --test
   sh -n install.sh
-  node --input-type=module --check -e "$(cat .opencode/plugins/vibe-wise.js)"
+  node --check .opencode/plugins/vibe-wise.js
   git diff --check
   ```
 - Architecture: skills auto-register as slash commands (opencode appends the skill base directory); restoration is a `experimental.chat.system.transform` injection once per session, re-armed by `session.compacted`; reset is the `vibe_wise_reset` custom tool; model skill invocation is denied best-effort by the plugin `config` hook and documented manually in the README.
@@ -1576,7 +1576,7 @@ git commit -m "docs: add README, development guide, and demo walkthrough"
 ```bash
 node --test
 sh -n install.sh
-node --input-type=module --check -e "$(cat .opencode/plugins/vibe-wise.js)"
+node --check .opencode/plugins/vibe-wise.js
 git diff --check
 git status --porcelain
 ```
